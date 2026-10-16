@@ -120,7 +120,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
         item.target = self
         // macOS adds its own symbols to items like Settings…, which this short menu doesn't need.
+        // The setting is in the macOS 27 SDK, which comes with Swift 6.4.
+        #if compiler(>=6.4)
         if #available(macOS 27, *) { item.preferredImageVisibility = .hidden }
+        #endif
         menu.addItem(item)
         return item
     }
