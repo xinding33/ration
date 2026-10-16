@@ -88,14 +88,6 @@ final class TextTests: XCTestCase {
         XCTAssertEqual(text.resets(nil, now: now), "Reset time not reported")
     }
 
-    func testDescribesWhenNumbersWereUpdated() {
-        XCTAssertEqual(text.updated(now.addingTimeInterval(-20), now: now), "Updated just now")
-        XCTAssertEqual(text.updated(now.addingTimeInterval(-90), now: now), "Updated 1 minute ago")
-        XCTAssertEqual(text.updated(now.addingTimeInterval(-12 * 60), now: now), "Updated 12 minutes ago")
-        XCTAssertEqual(text.updated(now.addingTimeInterval(-3 * 3600), now: now), "Updated at 1:52\u{202F}PM")
-        XCTAssertEqual(text.updated(now.addingTimeInterval(-2 * 86400), now: now), "Updated Oct 13 at 4:52\u{202F}PM")
-    }
-
     func testRoundsPercentages() {
         XCTAssertEqual(text.percent(6.4), "6%")
         XCTAssertEqual(text.percent(12.5), "13%")

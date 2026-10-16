@@ -30,20 +30,6 @@ public struct UsageText {
         return "Resets \(format(date, "MMMd")) at \(time)"
     }
 
-    /// "Updated just now", "Updated 1 minute ago", "Updated 12 minutes ago" or "Updated at 4:52 PM".
-    public func updated(_ date: Date, now: Date) -> String {
-        let minutes = Int(now.timeIntervalSince(date) / 60)
-        switch minutes {
-        case ..<1: return "Updated just now"
-        case 1: return "Updated 1 minute ago"
-        case 2..<60: return "Updated \(minutes) minutes ago"
-        default:
-            return calendar.isDate(date, inSameDayAs: now)
-                ? "Updated at \(format(date, "jmm"))"
-                : "Updated \(format(date, "MMMd")) at \(format(date, "jmm"))"
-        }
-    }
-
     /// "6:12 PM", for messages like "retrying at 6:12 PM".
     public func time(_ date: Date) -> String { format(date, "jmm") }
 
