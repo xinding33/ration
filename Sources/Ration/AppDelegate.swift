@@ -94,7 +94,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     let pace = window.pace(now: now)
                     let row = UsageRowView(window, resets: text.resets(window.resetsAt, now: now),
                                            pace: pace, paceText: pace.map { text.pace($0, now: now) })
-                    menu.addItem(viewItem(row))
+                    // On the item as well as the view, since a view's tooltip can be hidden while Ration isn't active.
+                    let item = viewItem(row)
+                    item.toolTip = row.toolTip
+                    menu.addItem(item)
                 }
                 if usage.windows.isEmpty { add("No limits reported", to: menu).isEnabled = false }
             } else if state.problem == nil {
