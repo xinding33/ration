@@ -33,8 +33,10 @@ enum Diagnose {
 
     private static func report(_ service: String, _ usage: ServiceUsage, _ text: UsageText) {
         print("\(service)\(usage.plan.map { " (\($0))" } ?? ""):")
+        let now = Date()
         for window in usage.windows {
-            print("  \(window.label): \(text.percent(window.usedPercent)) · \(text.resets(window.resetsAt, now: Date()))")
+            let pace = window.pace(now: now).map { " · \(text.pace($0, now: now))" } ?? ""
+            print("  \(window.label): \(text.percent(window.usedPercent)) · \(text.resets(window.resetsAt, now: now))\(pace)")
         }
         if usage.windows.isEmpty { print("  no limits reported") }
     }
@@ -51,14 +53,24 @@ enum Diagnose {
 enum Snapshot {
     static func run(into folder: URL) -> Never {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let soon = Date().addingTimeInterval(4 * 3600)
-        let later = Date().addingTimeInterval(2 * 86400)
+        let now = Date()
+        let session: TimeInterval = 5 * 3600, week: TimeInterval = 7 * 86400
+        // 72% of Claude's week has passed and 46% of ChatGPT's, so the weekly rows show every pace.
+        let claudeWeek = now.addingTimeInterval(47 * 3600)
         let claude = ServiceUsage(plan: "Max", windows: [
-            UsageWindow(label: "Session (5 hours)", usedPercent: 6, resetsAt: soon),
-            UsageWindow(label: "Weekly", usedPercent: 92, resetsAt: later),
+            UsageWindow(label: "Session (5 hours)", usedPercent: 86, resetsAt: now.addingTimeInterval(4 * 3600), duration: session),
+            UsageWindow(label: "Weekly", usedPercent: 48, resetsAt: claudeWeek, duration: week),
+            UsageWindow(label: "Weekly (Opus)", usedPercent: 70, resetsAt: claudeWeek, duration: week),
         ])
-        let chatGPT = ServiceUsage(plan: "Pro", windows: [UsageWindow(label: "Weekly", usedPercent: 1, resetsAt: later)])
+        let chatGPT = ServiceUsage(plan: "Pro", windows: [
+            UsageWindow(label: "Weekly", usedPercent: 81, resetsAt: now.addingTimeInterval(91 * 3600), duration: week),
+        ])
         let text = UsageText()
+        func row(_ window: UsageWindow) -> UsageRowView {
+            let pace = window.pace(now: now)
+            return UsageRowView(window, resets: text.resets(window.resetsAt, now: now),
+                                pace: pace, paceText: pace.map { text.pace($0, now: now) })
+        }
         for appearance in [NSAppearance.Name.aqua, .darkAqua] {
             let name = appearance == .aqua ? "light" : "dark"
             NSAppearance(named: appearance)!.performAsCurrentDrawingAppearance {
@@ -76,9 +88,9 @@ enum Snapshot {
                 }
             }
             var rows: [NSView] = [ServiceHeaderView(name: "Claude", plan: claude.plan)]
-            rows += claude.windows.map { UsageRowView($0, resets: text.resets($0.resetsAt, now: Date())) }
+            rows += claude.windows.map(row)
             rows.append(ServiceHeaderView(name: "ChatGPT", plan: chatGPT.plan))
-            rows += chatGPT.windows.map { UsageRowView($0, resets: text.resets($0.resetsAt, now: Date())) }
+            rows += chatGPT.windows.map(row)
             let height = rows.reduce(16) { $0 + $1.frame.height }
             let menu = Backdrop(frame: NSRect(x: 0, y: 0, width: UsageRowView.width, height: height))
             menu.color = appearance == .aqua ? NSColor(white: 0.96, alpha: 1) : NSColor(white: 0.17, alpha: 1)

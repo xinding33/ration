@@ -18,16 +18,40 @@ public struct UsageText {
     public func resets(_ date: Date?, now: Date) -> String {
         guard let date else { return "Reset time not reported" }
         if date <= now { return "Resetting now" }
+        return "Resets \(day(date, now: now))"
+    }
+
+    /// The tooltip for a window's pace: "On track to leave about 35% unused", "On track to use
+    /// about 95% by the reset", "On track to use all of it by the reset" or "On track to run out
+    /// tomorrow at 8:00 AM".
+    public func pace(_ pace: Pace, now: Date) -> String {
+        func nearestFive(_ value: Double) -> Int { Int((value / 5).rounded()) * 5 }
+        switch pace {
+        case .under(let projected):
+            return "On track to leave about \(nearestFive(100 - projected))% unused"
+        case .on(let projected):
+            let used = min(nearestFive(projected), 100)
+            return used == 100 ? "On track to use all of it by the reset" : "On track to use about \(used)% by the reset"
+        case .over(let runsOutAt):
+            // To the next quarter hour, since the estimate is rough.
+            let quarter: TimeInterval = 15 * 60
+            let rounded = Date(timeIntervalSinceReferenceDate: (runsOutAt.timeIntervalSinceReferenceDate / quarter).rounded(.up) * quarter)
+            return "On track to run out \(day(rounded, now: now))"
+        }
+    }
+
+    /// "today at 9:40 PM", "tomorrow at 1:00 PM", "Sat at 1:00 PM" or "Oct 30 at 1:00 PM".
+    private func day(_ date: Date, now: Date) -> String {
         let time = format(date, "jmm")
-        if calendar.isDate(date, inSameDayAs: now) { return "Resets today at \(time)" }
+        if calendar.isDate(date, inSameDayAs: now) { return "today at \(time)" }
         if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow) {
-            return "Resets tomorrow at \(time)"
+            return "tomorrow at \(time)"
         }
         let startOfToday = calendar.startOfDay(for: now)
         if let days = calendar.dateComponents([.day], from: startOfToday, to: calendar.startOfDay(for: date)).day, days < 7 {
-            return "Resets \(format(date, "EEE")) at \(time)"
+            return "\(format(date, "EEE")) at \(time)"
         }
-        return "Resets \(format(date, "MMMd")) at \(time)"
+        return "\(format(date, "MMMd")) at \(time)"
     }
 
     /// "6:12 PM", for messages like "retrying at 6:12 PM".
