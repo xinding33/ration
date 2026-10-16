@@ -91,7 +91,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(viewItem(ServiceHeaderView(name: service.name, plan: state.usage?.plan)))
             if let usage = state.usage {
                 for window in usage.windows {
-                    menu.addItem(viewItem(UsageRowView(window, resets: text.resets(window.resetsAt, now: now))))
+                    let pace = window.pace(now: now)
+                    let row = UsageRowView(window, resets: text.resets(window.resetsAt, now: now),
+                                           pace: pace, paceText: pace.map { text.pace($0, now: now) })
+                    menu.addItem(viewItem(row))
                 }
                 if usage.windows.isEmpty { add("No limits reported", to: menu).isEnabled = false }
             } else if state.problem == nil {
