@@ -91,7 +91,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(viewItem(ServiceHeaderView(name: service.name, plan: state.usage?.plan)))
             if let usage = state.usage {
                 for window in usage.windows {
-                    menu.addItem(viewItem(UsageRowView(window, resets: text.resets(window.resetsAt, now: now))))
+                    let pace = window.pace(now: now)
+                    let row = UsageRowView(window, resets: text.resets(window.resetsAt, now: now),
+                                           pace: pace, paceText: pace.map { text.pace($0, now: now) })
+                    // On the item as well as the view, since a view's tooltip can be hidden while Ration isn't active.
+                    let item = viewItem(row)
+                    item.toolTip = row.toolTip
+                    menu.addItem(item)
                 }
                 if usage.windows.isEmpty { add("No limits reported", to: menu).isEnabled = false }
             } else if state.problem == nil {

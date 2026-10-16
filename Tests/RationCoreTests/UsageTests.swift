@@ -24,6 +24,7 @@ final class UsageTests: XCTestCase {
                        0.717375, accuracy: 0.001)
         XCTAssertEqual(usage.windows[1].resetsAt, iso.date(from: "2026-10-17T20:00:00Z"))
         XCTAssertNil(usage.windows[2].resetsAt)
+        XCTAssertEqual(usage.windows.map(\.duration), [18000, 604800, 604800, 604800])
         XCTAssertEqual(usage.tightest?.label, "Weekly (Fable)")
     }
 
@@ -48,8 +49,8 @@ final class UsageTests: XCTestCase {
         XCTAssertEqual(result.email, "someone@example.com")
         XCTAssertEqual(result.usage.plan, "Pro")
         XCTAssertEqual(result.usage.windows, [
-            UsageWindow(label: "Session (5 hours)", usedPercent: 30, resetsAt: now.addingTimeInterval(600)),
-            UsageWindow(label: "Weekly", usedPercent: 1, resetsAt: Date(timeIntervalSince1970: 1792652134)),
+            UsageWindow(label: "Session (5 hours)", usedPercent: 30, resetsAt: now.addingTimeInterval(600), duration: 18000),
+            UsageWindow(label: "Weekly", usedPercent: 1, resetsAt: Date(timeIntervalSince1970: 1792652134), duration: 604800),
         ])
     }
 

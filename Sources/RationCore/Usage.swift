@@ -6,11 +6,14 @@ public struct UsageWindow: Equatable {
     /// 0 to 100, as the service reports it.
     public let usedPercent: Double
     public let resetsAt: Date?
+    /// How long the window lasts, when known.
+    public let duration: TimeInterval?
 
-    public init(label: String, usedPercent: Double, resetsAt: Date?) {
+    public init(label: String, usedPercent: Double, resetsAt: Date?, duration: TimeInterval? = nil) {
         self.label = label
         self.usedPercent = min(max(usedPercent, 0), 100)
         self.resetsAt = resetsAt
+        self.duration = duration
     }
 
     /// At this much use a window is drawn in orange.
@@ -113,20 +116,21 @@ public enum ClaudeUsageResponse {
             throw UsageParseError.unexpectedResponse("Claude")
         }
         var windows: [UsageWindow] = []
-        func add(_ label: String, _ window: Window?) {
+        let session: TimeInterval = 5 * 3600, week: TimeInterval = 7 * 86400
+        func add(_ label: String, _ window: Window?, _ duration: TimeInterval) {
             guard let window, let used = window.utilization else { return }
-            windows.append(UsageWindow(label: label, usedPercent: used, resetsAt: ISODate.parse(window.resetsAt)))
+            windows.append(UsageWindow(label: label, usedPercent: used, resetsAt: ISODate.parse(window.resetsAt), duration: duration))
         }
-        add("Session (5 hours)", body.fiveHour)
-        add("Weekly", body.sevenDay)
-        add("Weekly (Opus)", body.sevenDayOpus)
-        add("Weekly (Sonnet)", body.sevenDaySonnet)
+        add("Session (5 hours)", body.fiveHour, session)
+        add("Weekly", body.sevenDay, week)
+        add("Weekly (Opus)", body.sevenDayOpus, week)
+        add("Weekly (Sonnet)", body.sevenDaySonnet, week)
         // Newer model-specific weekly limits are reported only in `limits`.
         for limit in body.limits ?? [] where limit.kind == "weekly_scoped" {
             guard let name = limit.scope?.model?.displayName, let used = limit.percent else { continue }
             let label = "Weekly (\(name))"
             guard !windows.contains(where: { $0.label == label }) else { continue }
-            windows.append(UsageWindow(label: label, usedPercent: used, resetsAt: ISODate.parse(limit.resetsAt)))
+            windows.append(UsageWindow(label: label, usedPercent: used, resetsAt: ISODate.parse(limit.resetsAt), duration: week))
         }
         return ServiceUsage(plan: planName(plan), windows: windows)
     }
@@ -170,7 +174,8 @@ public enum ChatGPTUsageResponse {
             let resets = window.resetAt.map { Date(timeIntervalSince1970: $0) }
                 ?? window.resetAfterSeconds.map { now.addingTimeInterval($0) }
             let label = window.limitWindowSeconds.map(windowLabel(seconds:)) ?? "Limit"
-            return UsageWindow(label: label, usedPercent: window.usedPercent ?? 0, resetsAt: resets)
+            return UsageWindow(label: label, usedPercent: window.usedPercent ?? 0, resetsAt: resets,
+                               duration: window.limitWindowSeconds.map(TimeInterval.init))
         }
         return Result(usage: ServiceUsage(plan: planName(body.planType), windows: windows), email: body.email)
     }

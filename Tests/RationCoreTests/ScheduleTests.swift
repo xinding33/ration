@@ -96,6 +96,15 @@ final class TextTests: XCTestCase {
         XCTAssertEqual(text.updated(now.addingTimeInterval(-2 * 86400), now: now), "Updated Oct 13 at 4:52\u{202F}PM")
     }
 
+    func testDescribesPace() {
+        XCTAssertEqual(text.pace(.under(projectedPercent: 66.7), now: now), "On track to leave about 35% unused")
+        XCTAssertEqual(text.pace(.on(projectedPercent: 93), now: now), "On track to use about 95% by the reset")
+        XCTAssertEqual(text.pace(.on(projectedPercent: 99), now: now), "On track to use all of it by the reset")
+        // Rounded up to the quarter hour.
+        XCTAssertEqual(text.pace(.over(runsOutAt: date("2026-10-16T15:03:00Z")), now: now), "On track to run out tomorrow at 8:15\u{202F}AM")
+        XCTAssertEqual(text.pace(.over(runsOutAt: date("2026-10-16T01:30:00Z")), now: now), "On track to run out today at 6:30\u{202F}PM")
+    }
+
     func testRoundsPercentages() {
         XCTAssertEqual(text.percent(6.4), "6%")
         XCTAssertEqual(text.percent(12.5), "13%")
