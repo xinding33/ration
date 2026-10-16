@@ -90,10 +90,8 @@ final class Updates: ObservableObject {
     private func install(_ release: Release) async throws {
         status = "Installing Ration \(release.version)…"
         try await Updater.install(release, replacing: Bundle.main.bundleURL)
-        var arguments = CommandLine.arguments.map { strdup($0) } + [nil]
-        execv(Bundle.main.executablePath!, &arguments)
-        // Only reached if execv failed. Keep running the old code until the next launch.
-        throw UpdateFailure(reason: String(cString: strerror(errno)))
+        // Only returns if it couldn't restart. Keep running the old code until the next launch.
+        throw UpdateFailure(reason: Relaunch.now(agentLabel: bundleID))
     }
 }
 

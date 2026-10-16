@@ -15,7 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let others = NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? bundleID)
-            .filter { $0.processIdentifier != getpid() }
+            // Alive, not just listed: right after a restart, the old copy can still be listed.
+            .filter { $0.processIdentifier != getpid() && kill($0.processIdentifier, 0) == 0 }
         if !others.isEmpty { NSApp.terminate(nil); return }
 
         LoginItem.refresh()
