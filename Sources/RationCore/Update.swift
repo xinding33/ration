@@ -112,6 +112,23 @@ public enum Updater {
         _ = try files.replaceItemAt(app, withItemAt: update)
     }
 
+    /// Whether a process that started at `processStarted` is running an executable changed at
+    /// `executableChanged` only because an older copy installed it and `execv`'d into it, as 0.2.0
+    /// and earlier did. A process can't otherwise start before its executable was written. The
+    /// margin allows for macOS touching the executable as it first opens it. A change in the future
+    /// means the clock was set back since, and every restart would look exec'd too.
+    public static func wasExecedIntoUpdate(processStarted: Date, executableChanged: Date, now: Date = Date()) -> Bool {
+        executableChanged.timeIntervalSince(processStarted) > 10 && executableChanged <= now
+    }
+
+    /// When the file at `url` was last written or replaced. Not its modification date, which
+    /// unzipping sets to when the release was built.
+    public static func changeDate(of url: URL) -> Date? {
+        var info = stat()
+        guard stat(url.path, &info) == 0 else { return nil }
+        return Date(timeIntervalSince1970: TimeInterval(info.st_ctimespec.tv_sec) + TimeInterval(info.st_ctimespec.tv_nsec) / 1e9)
+    }
+
     /// Whether `app` is signed with a Developer ID, as releases are. Source builds are not, and cannot install releases.
     public static func isDeveloperIDSigned(_ app: URL) -> Bool {
         let developerID = "anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] exists"

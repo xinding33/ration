@@ -1,10 +1,25 @@
 import Foundation
+import RationCore
 
 /// Restarts into the copy now at the app's path, e.g. after an update replaced it.
 ///
 /// Not with `execv`: macOS 27 doesn't show the menu bar item of a process that has exec'd itself,
 /// so the restarted app would run with no icon.
 enum Relaunch {
+    /// Whether an older copy installed this one and `execv`'d into it, as 0.2.0 and earlier did
+    /// after an update. This process can't have a menu bar item either, so it has to restart.
+    static var execedByOlderCopy: Bool {
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.stride
+        var mib = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+        guard sysctl(&mib, 4, &info, &size, nil, 0) == 0,
+              let changed = Bundle.main.executableURL.flatMap(Updater.changeDate(of:)) else { return false }
+        let started = info.kp_proc.p_starttime
+        return Updater.wasExecedIntoUpdate(
+            processStarted: Date(timeIntervalSince1970: TimeInterval(started.tv_sec) + TimeInterval(started.tv_usec) / 1e6),
+            executableChanged: changed)
+    }
+
     /// Starts the new copy and exits this one, without running the app's quit handling, as `execv`
     /// didn't either. Returns only if it couldn't, with the reason.
     static func now(agentLabel: String) -> String {
