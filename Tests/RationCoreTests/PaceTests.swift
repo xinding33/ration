@@ -46,6 +46,7 @@ final class PaceTests: XCTestCase {
     func testSessionsHaveAPaceFromTheStart() throws {
         XCTAssertTrue(session(0, hours: 0).showsPace)
         XCTAssertNil(session(0, hours: 0).pace(now: now))
+        XCTAssertEqual(session(0, hours: 1.0 / 60).pace(now: now), .under(projectedPercent: 0))
         XCTAssertEqual(session(2, hours: 0.25).pace(now: now), .under(projectedPercent: 40))
         XCTAssertEqual(session(30, hours: 0.5).pace(now: now).map(\.projectedPercent), 100)
         XCTAssertEqual(session(10, hours: 1).pace(now: now), .under(projectedPercent: 50))
