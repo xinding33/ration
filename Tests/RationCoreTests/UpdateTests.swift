@@ -88,6 +88,9 @@ final class UpdateTests: XCTestCase {
         // Opened after the update was installed, or as macOS touched the executable while opening it.
         XCTAssertFalse(Updater.wasExecedIntoUpdate(processStarted: changed.addingTimeInterval(1), executableChanged: changed))
         XCTAssertFalse(Updater.wasExecedIntoUpdate(processStarted: changed.addingTimeInterval(-2), executableChanged: changed))
+        // Installed while the clock was an hour fast, then opened after it was set right.
+        XCTAssertFalse(Updater.wasExecedIntoUpdate(processStarted: changed.addingTimeInterval(-3000), executableChanged: changed,
+                                                   now: changed.addingTimeInterval(-2990)))
     }
     func testRejectsAnUpdateSignedDifferently() throws {
         let app = try makeApp(in: "installed", version: "1.1.0")

@@ -115,9 +115,10 @@ public enum Updater {
     /// Whether a process that started at `processStarted` is running an executable changed at
     /// `executableChanged` only because an older copy installed it and `execv`'d into it, as 0.2.0
     /// and earlier did. A process can't otherwise start before its executable was written. The
-    /// margin allows for macOS touching the executable as it first opens it.
-    public static func wasExecedIntoUpdate(processStarted: Date, executableChanged: Date) -> Bool {
-        executableChanged.timeIntervalSince(processStarted) > 10
+    /// margin allows for macOS touching the executable as it first opens it. A change in the future
+    /// means the clock was set back since, and every restart would look exec'd too.
+    public static func wasExecedIntoUpdate(processStarted: Date, executableChanged: Date, now: Date = Date()) -> Bool {
+        executableChanged.timeIntervalSince(processStarted) > 10 && executableChanged <= now
     }
 
     /// When the file at `url` was last written or replaced. Not its modification date, which
