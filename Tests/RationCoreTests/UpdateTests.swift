@@ -73,6 +73,22 @@ final class UpdateTests: XCTestCase {
         try Updater.install(zip: update, version: XCTUnwrap(Version("1.2.0")), replacing: app)
         XCTAssertEqual(installedVersion(app), "1.2.0")
     }
+    func testTellsAProcessExecedIntoAnUpdateFromAFreshLaunch() throws {
+        let app = try makeApp(in: "installed", version: "1.1.0")
+        let built = try makeApp(in: "update", version: "1.2.0")
+        // Unzipping keeps the build's modification date, so only the change date says when it was installed.
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -86400)],
+                                              ofItemAtPath: built.appendingPathComponent("Contents/MacOS/Ration").path)
+        let update = try zip(built)
+        try Updater.install(zip: update, version: XCTUnwrap(Version("1.2.0")), replacing: app)
+        let changed = try XCTUnwrap(Updater.changeDate(of: app.appendingPathComponent("Contents/MacOS/Ration")))
+        XCTAssertEqual(changed.timeIntervalSinceNow, 0, accuracy: 5)
+        // Running for an hour when the update was installed over it.
+        XCTAssertTrue(Updater.wasExecedIntoUpdate(processStarted: changed.addingTimeInterval(-3600), executableChanged: changed))
+        // Opened after the update was installed, or as macOS touched the executable while opening it.
+        XCTAssertFalse(Updater.wasExecedIntoUpdate(processStarted: changed.addingTimeInterval(1), executableChanged: changed))
+        XCTAssertFalse(Updater.wasExecedIntoUpdate(processStarted: changed.addingTimeInterval(-2), executableChanged: changed))
+    }
     func testRejectsAnUpdateSignedDifferently() throws {
         let app = try makeApp(in: "installed", version: "1.1.0")
         let update = try zip(makeApp(in: "update", identifier: "test.impostor", version: "1.2.0"))

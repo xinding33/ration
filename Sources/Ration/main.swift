@@ -14,6 +14,9 @@ if CommandLine.arguments.contains("--diagnose") {
 if let index = CommandLine.arguments.firstIndex(of: "--snapshot"), index + 1 < CommandLine.arguments.count {
     MainActor.assumeIsolated { Snapshot.run(into: URL(fileURLWithPath: CommandLine.arguments[index + 1])) }
 }
+if Relaunch.execedByOlderCopy {
+    NSLog("Couldn't restart after an update: %@", Relaunch.now(agentLabel: bundleID))
+}
 
 let application = NSApplication.shared
 application.setActivationPolicy(.accessory)
