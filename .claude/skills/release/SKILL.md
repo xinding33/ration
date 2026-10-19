@@ -5,9 +5,10 @@ description: Tag and publish a new Ration version. Use right after merging a PR 
 
 # Release Ration
 
-Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`. It tests, builds a universal app,
-notarizes it, publishes the GitHub release with generated notes, and updates the cask in
-`xinding33/homebrew-tap`. Every installed copy installs the release within a day.
+Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`. It tests, builds an Apple silicon
+app, notarizes it, publishes the GitHub release with generated notes, and updates the cask in
+`xinding33/homebrew-tap`. Installed copies with automatic updates on (the default) install it
+the next time they check, at most a day later.
 
 ## When
 
@@ -16,15 +17,19 @@ a new or changed setting, a change to the updater, signing or the cask. Don't re
 changes that only touch docs, tests, CI, comments or scripts that don't change the shipped app.
 If several PRs merge in one session, release once at the end.
 
-Don't release from a branch, and don't release if main's latest commit isn't the merged PR
-you just checked.
+Always release what's on `origin/main`, never a branch. If main has moved past your PR (someone
+else merged after you), release main as it is now, as long as something since the last tag
+needs a release. A docs-only merge after a feature still means the feature needs to ship.
+Before tagging, check that the last tag isn't already `origin/main`, and that no Release run is
+in progress for a newer tag.
 
 ## Version
 
-Look at the commits since the last tag (`git log --oneline $(git describe --tags --abbrev=0)..origin/main`).
+Read the commits since the last tag on main (the first two commands under Steps).
 
-- Any feature or visible change: bump the minor number and reset the patch (0.3.0 → 0.4.0).
-- Only fixes: bump the patch (0.3.0 → 0.3.1).
+- Any feature (new behavior, new setting, new thing on screen): bump the minor number and
+  reset the patch (0.3.0 → 0.4.0).
+- Only fixes, including fixes to what's on screen: bump the patch (0.3.0 → 0.3.1).
 - Stay below 1.0 unless Xin says otherwise.
 
 Versions are plain dotted numbers. The updater can't parse pre-release suffixes like `-beta`.
@@ -36,7 +41,8 @@ git fetch origin --tags
 git log --oneline "$(git describe --tags --abbrev=0 origin/main)..origin/main"   # what's shipping
 git tag -m "Ration X.Y.Z" vX.Y.Z origin/main   # signed and annotated (tag.gpgsign is on)
 git push origin vX.Y.Z
-gh run list --workflow Release --limit 1        # get the run ID
+# The run for this tag can take a few seconds to appear. Don't watch an older run.
+gh run list --workflow Release --branch vX.Y.Z --json databaseId,headSha --jq '.[0]'
 gh run watch RUN_ID --exit-status
 gh release view vX.Y.Z
 ```
