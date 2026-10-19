@@ -7,11 +7,11 @@ The menu bar icon is two rings: the outer one is Claude, the inner one ChatGPT. 
 that service's fullest limit and turns orange at 80%. Click it for every limit, how much of it is
 used, and when it resets.
 
-Weekly limits also show where you're headed. Stripes past the fill show how much you'll have used
-when the week resets if you keep going at the same rate: orange if you'd leave a good part of it
+Limits also show where you're headed. Stripes past the fill show how much you'll have used when
+the limit resets if you keep going at the same rate: orange if you'd leave a good part of it
 unused, green if you'd use most of it, and gray with a mark past the end if you'd run out first.
-Hover over the row to see it in words. The stripes appear once a tenth of the week has passed, and
-orange waits for a quarter.
+Hover over the row to see it in words. On a 5-hour session the stripes start right away; on a
+weekly limit they wait a day after the reset.
 
 ## Install
 
