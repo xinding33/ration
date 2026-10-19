@@ -4,10 +4,16 @@ import XCTest
 final class PaceTests: XCTestCase {
     let now = Date(timeIntervalSince1970: 1_800_000_000)
     let week: TimeInterval = 7 * 86400
+    let session: TimeInterval = 5 * 3600
 
     /// A weekly window with `elapsed` of it gone.
     func weekly(_ used: Double, elapsed: Double) -> UsageWindow {
         UsageWindow(label: "Weekly", usedPercent: used, resetsAt: now.addingTimeInterval(week * (1 - elapsed)), duration: week)
+    }
+
+    /// A 5-hour session with `hours` of it gone.
+    func session(_ used: Double, hours: Double) -> UsageWindow {
+        UsageWindow(label: "Session (5 hours)", usedPercent: used, resetsAt: now.addingTimeInterval(session - hours * 3600), duration: session)
     }
 
     func testJudgesWeeklyWindowsByAnEvenPace() {
@@ -28,26 +34,30 @@ final class PaceTests: XCTestCase {
         XCTAssertEqual(pace.projectedPercent, 100)
     }
 
-    func testWaitsBeforeJudging() {
-        // Nothing in the first 10%, whichever way it's going.
-        XCTAssertNil(weekly(0, elapsed: 0.05).pace(now: now))
-        XCTAssertNil(weekly(20, elapsed: 0.05).pace(now: now))
-        XCTAssertNotNil(weekly(20, elapsed: 0.15).pace(now: now))
-        // Under pace waits until a quarter of the week has passed.
-        XCTAssertEqual(weekly(14, elapsed: 0.15).pace(now: now), .on(projectedPercent: 14 / 0.15))
-        XCTAssertNil(weekly(10, elapsed: 0.15).pace(now: now))
-        XCTAssertNil(weekly(5, elapsed: 0.2).pace(now: now))
-        XCTAssertEqual(weekly(5, elapsed: 0.25).pace(now: now), .under(projectedPercent: 20))
+    func testWaitsADayIntoTheWeek() {
+        let day = 1.0 / 7
+        XCTAssertNil(weekly(0, elapsed: day * 0.9).pace(now: now))
+        XCTAssertNil(weekly(20, elapsed: day * 0.9).pace(now: now))
+        XCTAssertNotNil(weekly(20, elapsed: day).pace(now: now))
+        XCTAssertEqual(weekly(5, elapsed: day).pace(now: now), .under(projectedPercent: 35))
         XCTAssertEqual(weekly(0, elapsed: 0.5).pace(now: now), .under(projectedPercent: 0))
     }
 
-    func testOnlyLongWindowsWithAResetTimeHaveAPace() {
-        let session = UsageWindow(label: "Session (5 hours)", usedPercent: 90, resetsAt: now.addingTimeInterval(3600), duration: 5 * 3600)
-        XCTAssertFalse(session.showsPace)
-        XCTAssertNil(session.pace(now: now))
-        let daily = UsageWindow(label: "Daily", usedPercent: 10, resetsAt: now.addingTimeInterval(3600), duration: 86400)
-        XCTAssertNil(daily.pace(now: now))
-        XCTAssertNil(UsageWindow(label: "Weekly", usedPercent: 10, resetsAt: now, duration: nil).pace(now: now))
+    func testSessionsHaveAPaceFromTheStart() throws {
+        XCTAssertTrue(session(0, hours: 0).showsPace)
+        XCTAssertNil(session(0, hours: 0).pace(now: now))
+        XCTAssertEqual(session(2, hours: 0.25).pace(now: now), .under(projectedPercent: 40))
+        XCTAssertEqual(session(30, hours: 0.5).pace(now: now).map(\.projectedPercent), 100)
+        XCTAssertEqual(session(10, hours: 1).pace(now: now), .under(projectedPercent: 50))
+        XCTAssertEqual(session(45, hours: 2.5).pace(now: now), .on(projectedPercent: 90))
+        // 60% used 2 hours in: 100% comes at 3 hours 20 minutes.
+        let pace = try XCTUnwrap(session(60, hours: 2).pace(now: now))
+        guard case .over(let runsOutAt) = pace else { return XCTFail("expected over, got \(pace)") }
+        XCTAssertEqual(runsOutAt.timeIntervalSince(now), 80 * 60, accuracy: 1)
+    }
+
+    func testOnlyWindowsWithALengthAndResetTimeHaveAPace() {
+        XCTAssertNil(UsageWindow(label: "Limit", usedPercent: 10, resetsAt: now.addingTimeInterval(3600)).pace(now: now))
         XCTAssertNil(UsageWindow(label: "Weekly", usedPercent: 10, resetsAt: nil, duration: week).pace(now: now))
         // Used up, already reset, or reporting a reset further off than the window is long.
         XCTAssertNil(weekly(100, elapsed: 0.5).pace(now: now))

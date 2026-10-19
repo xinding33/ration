@@ -55,10 +55,11 @@ enum Snapshot {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let now = Date()
         let session: TimeInterval = 5 * 3600, week: TimeInterval = 7 * 86400
-        // 72% of Claude's week has passed and 46% of ChatGPT's, so the weekly rows show every pace.
+        // 72% of Claude's week has passed and 46% of ChatGPT's, so the weekly rows show every pace. The session is
+        // an hour and a half in.
         let claudeWeek = now.addingTimeInterval(47 * 3600)
         let claude = ServiceUsage(plan: "Max", windows: [
-            UsageWindow(label: "Session (5 hours)", usedPercent: 86, resetsAt: now.addingTimeInterval(4 * 3600), duration: session),
+            UsageWindow(label: "Session (5 hours)", usedPercent: 40, resetsAt: now.addingTimeInterval(3.5 * 3600), duration: session),
             UsageWindow(label: "Weekly", usedPercent: 48, resetsAt: claudeWeek, duration: week),
             UsageWindow(label: "Weekly (Opus)", usedPercent: 70, resetsAt: claudeWeek, duration: week),
         ])
