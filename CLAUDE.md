@@ -19,3 +19,5 @@ Scars and invariants only. Anything a grep or `--help` can tell you doesn't go h
 
 - Restart as a new process, never with `execv`. macOS 27 won't give the same process a menu
   bar item twice (#3).
+- Releases build with the macOS 26 SDK. Code under `#if compiler(>=6.4)` is left out of shipped
+  builds without warning (#7).
